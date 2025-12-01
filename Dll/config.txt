@@ -1,0 +1,84 @@
+{
+    "x_axis_min": 0.0,
+    "x_axis_max": 1280.0,
+    "rows_number": 20,
+    "brightness": 260,
+    "gain": 2,
+    "baseline_correction": false,
+    "autoROI": false,
+    "width": 3,
+    "prominence": 3.0,
+    "height": 200,
+    "ROI": 423,
+    "threshold_high": 0.9214376762368957,
+    "threshold_low": 0.6929694373734224,
+    "standard_wavelength": [
+        404.656,
+        435.833,
+        546.074,
+        578.013,
+        696.543,
+        706.722,
+        727.294,
+        738.398,
+        750.764,
+        763.511,
+        772.395,
+        794.818,
+        801.08,
+        811.531,
+        826.452,
+        841.807,
+        852.144,
+        866.794,
+        912.297,
+        922.45
+    ],
+    "features": {
+        "fwhm_mean": {
+            "max": 36.69236464,
+            "min": 3.075019727,
+            "weight": 0.2292
+        },
+        "feature1_ratio": {
+            "max": 0.386967752,
+            "min": -0.005901776,
+            "weight": 0.1136
+        },
+        "feature2_ratio": {
+            "max": 0.441474691,
+            "min": -0.015538896,
+            "weight": 0.0609
+        },
+        "feature3_ratio": {
+            "max": 0.56889922,
+            "min": 0.003596325,
+            "weight": 0.1704
+        },
+        "feature4_difference": {
+            "max": 58.08323817,
+            "min": 0.157786251,
+            "weight": 0.1043
+        },
+        "feature5": {
+            "max": 0.451970514,
+            "min": 0.012787136,
+            "weight": 0.064
+        },
+        "feature6": {
+            "max": 0.882238155,
+            "min": 0.091666314,
+            "weight": 0.0683
+        },
+        "fwhm_std": {
+            "max": 59.18874295,
+            "min": 0.148492424,
+            "weight": 0.0725
+        },
+        "Baseline Evaluation": {
+            "max": 444.265,
+            "min": 0.2325,
+            "weight": 0.1168
+        }
+    }
+}
