@@ -1,4 +1,3 @@
-# main.py
 import serial
 import time
 import re
@@ -52,12 +51,23 @@ def get_config_path():
     Returns:
         str: 設定檔的有效路徑。
     """
+    # 获取当前 main.py 所在的绝对目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 拼接出 script.txt 的绝对路径
+    default_path = os.path.join(current_dir, 'script.txt')
+
     while True:
         # path = input("請輸入設定檔 (txt) 的完整路徑: ")
-        path = r'./script.txt'
+        path = default_path
+        
         if os.path.exists(path) and path.endswith('.txt'):
             return path
         else:
+            print(f"错误：在路径 '{path}' 找不到設定檔。")
+            # 如果自动寻找失败，允许用户手动输入，避免死循环
+            user_path = input("請手動輸入設定檔 (txt) 的完整路徑: ")
+            if os.path.exists(user_path) and user_path.endswith('.txt'):
+                return user_path
             print("路徑無效或檔案不是 .txt 檔，請重新輸入。")
 
 
@@ -322,7 +332,7 @@ def main():
 
 
 
-        # 6. 將所有循環的結果寫入單一 Excel 檔案
+        # 6. 將所有循環的結果寫入單一 Excel 檔案 
         excel_filename = os.path.join('./', f"{timestamp}_result.xlsx")
         logging.info(f"正在將所有循環的結果寫入 Excel: {excel_filename}")
         excel_writer.write_to_excel(
