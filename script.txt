@@ -20,3 +20,5 @@ wait_time=15
 lamp=3
 baseline_start=850
 baseline_end=855
+wavelength_start=300
+wavelength_end=1000

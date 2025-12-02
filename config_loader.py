@@ -166,4 +166,7 @@ def load_and_validate_config(filepath):
     number_of_autoscaling = int(params['number_of_autoscaling'])
     params['number_of_autoscaling'] = number_of_autoscaling
 
+    params['wavelength_start']= int(params['wavelength_start'])
+    params['wavelength_end']= int(params['wavelength_end'])
+
     return params

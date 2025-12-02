@@ -54,7 +54,7 @@ def get_config_path():
     """
     while True:
         # path = input("請輸入設定檔 (txt) 的完整路徑: ")
-        path = './script.txt'
+        path = r'./script.txt'
         if os.path.exists(path) and path.endswith('.txt'):
             return path
         else:
@@ -137,29 +137,7 @@ def perform_autoscaling(params,stage, spectrometer):
         if abs(ias - autoscaling_intensity) <= autoscaling_threshold:
             #3.1 start use number of autoscaling to calibrate the exposure time
             logging.info("AutoScaling converged.")
-            # logging.info(f"AutoScaling  scan {params['number_of_autoscaling']} times")
-            # if params['number_of_autoscaling'] == 0:
-            #     pass
-            # else:
-                # intensity_list=[]
-                # for j in range(params['number_of_autoscaling']):
-                #     logging.info(f"AutoScaling scan {j + 1}/{params['number_of_autoscaling']}")
-                #     stage.send_command(f"$MLS{params['no_of_pulse_per_point']}#")
-                #     raw_spec = spectrometer.read_spectrum_single_no_base(params)
-                #     # wl = spectrometer.get_wavelength_axis()
-                #     # ias_index = np.abs(wl - autoscaling_wavelength).argmin()
-                #     ias = raw_spec[autoscaling_wavelength]
-                #     intensity_list.append(ias)
-                # avg_intensity = sum(intensity_list) / len(intensity_list)
-                # pias = autoscaling_intensity/avg_intensity
-                # spectrometer.exp = min(int(spectrometer.exp * pias), 899)
-                # spectrometer.exp = max(1, spectrometer.exp)
-                # spectrometer.set_exp(spectrometer.exp)
-                # logging.info(f"the exp after this autoscaling is {spectrometer.exp} ms")
-                # raw_spec = spectrometer.read_spectrum_single()
-                # raw_spec = spectrometer.read_spectrum_single()
-                # raw_spec = spectrometer.read_spectrum_single()
-                # raw_spec = spectrometer.read_spectrum_single()
+
 
             logging.info("AutoScaling over.")
             return True
@@ -228,15 +206,8 @@ def perform_autoscaling2(params, stage, spectrometer):
             raw_spec = spectrometer.read_spectrum_single()
             raw_spec = spectrometer.read_spectrum_single()
             raw_spec = spectrometer.read_spectrum_single()
-            # raw_spec = spectrometer.read_spectrum_single_no_base(params)
-            # ias = raw_spec[autoscaling_wavelength]
-            # logging.info(f"intensity is {ias}, after the {ii}th time of autoscaling")
-            # if abs(ias-params['autoscaling_intensity'])<params['autoscaling_threshold']:
-            #     logging.info("successful AutoScaling in average points")
-            #     break
-            # else:
-            #     logging.info(f"continue next average autoscaling")
-            #     continue
+
+
 
 
 
@@ -307,9 +278,6 @@ def main():
                     logging.info(f"等待 {wait_time} 秒...")
                     time.sleep(wait_time)
                 elif command == '$SRD#':
-                    # 在快速模式下，我們需要手動為光譜量測增加延遲
-                    # 確保上一個移動指令有足夠的時間完成。
-                    # 這個延遲時間需要根據實驗猜測和調整，非常不可靠。
                     time.sleep(0.2)  # !危險的延遲，需要手動調整!
                     if srd_count < params['no_of_point_per_cycle']:
                         for _ in range(params['no_of_drop']):
@@ -370,7 +338,7 @@ def main():
 
 
         # 6. 將所有循環的結果寫入單一 Excel 檔案
-        excel_filename = os.path.join('.\\', f"{timestamp}_result.xlsx")
+        excel_filename = os.path.join('./', f"{timestamp}_result.xlsx")
         logging.info(f"正在將所有循環的結果寫入 Excel: {excel_filename}")
         excel_writer.write_to_excel(
             all_cycles_data=all_cycles_data,

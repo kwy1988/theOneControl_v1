@@ -116,12 +116,17 @@ class SpectrometerController:
                 cap.release()
         raise RuntimeError("找不到符合解析度 (1280x800) 的光譜儀相機。")
 
-    def set_exp(self, exp):
+    def set_exp(self, exp,gain):
         """設定曝光參數。"""
-        self.exp = exp
-        if self.cap and self.cap.isOpened():
-            self.cap.set(cv2.CAP_PROP_BRIGHTNESS, self.exp)
-
+        if not self.cap: return
+        self.exp = int(exp)
+        self.gain = int(gain)
+        self.cap.set(cv2.CAP_PROP_GAIN, self.gain)
+        time.sleep(1)
+        self.cap.set(cv2.CAP_PROP_BRIGHTNESS, self.exp)
+        time.sleep(1)
+        logging.info(f"Spectrometer parameters set: Gain={self.gain}, Exposure={self.exp}ms")
+        #let the spectrometer cmos sensor flush the flash
 
     def _process_frame(self, frame):
         """處理從相機讀取的原始影格，轉換為光譜強度。"""
@@ -134,7 +139,7 @@ class SpectrometerController:
         combined_data = ((high_bits << 4) | (low_bits - 128)).astype(np.uint16)
         return combined_data
 
-    def read_spectrum_single(self):
+    def _read_single_raw_spectrum(self):
         """
         捕獲一幀影像，並回傳處理後的光譜資料。
 
@@ -158,9 +163,6 @@ class SpectrometerController:
             # 從 ROI 區域提取光譜並平均
             roi_data = result[self.ROI: self.ROI + self.rows_number, :]
             roi_avg = np.mean(roi_data, axis=0)
-            # window_size = 79
-            # poly = 3
-            # roi_avg = savgol_filter(roi_avg, window_size, poly)
             return roi_avg
         except Exception as e:
             logging.error(f"處理光譜影格時發生錯誤: {e}", exc_info=True)
@@ -183,7 +185,7 @@ class SpectrometerController:
         else:
             logging.error("光譜儀設備資源釋放失敗。")
 
-    def read_spectrum(self, no_of_average=1):
+    def read_spectrum(self,params=None):
         """
         讀取多幀影像並平均，回傳處理後的光譜資料。
 
@@ -194,59 +196,35 @@ class SpectrometerController:
             numpy.ndarray: 1D 陣列 (長度 1280)，包含光譜強度值。
                            如果失敗則返回 None。
         """
-        if no_of_average <= 0:
-            logging.warning("平均次數必須大於 0。")
-            return None
-        # temp = self.read_spectrum_single()   #temp舍弃
-        # temp = self.read_spectrum_single()   #temp舍弃
+        no_average = params.get('no_of_average', 2)
+        no_drop = params.get('no_of_drop', 1)
+        logging.debug(f"Reading spectrum: Dropping {no_drop}, Averaging {no_average}.")
+        for _ in range(no_drop):
+            if self._read_single_raw_spectrum() is None:    #accquire spectrum but not save
+                logging.warning("Failed to discard a spectrum.")
 
-            # 使用一個列表來收集所有成功讀取的光譜
-        spectrums = []
-        for i in range(no_of_average):
-
-            single_spectrum = self.read_spectrum_single()
-            # time.sleep(0.1)
-            # 關鍵：檢查單次讀取是否成功
-            if single_spectrum is not None:
-                spectrums.append(single_spectrum)
-            else:
-                # 如果有一次讀取失敗，可以選擇：
-                # 1. 忽略這次失敗，繼續讀取下一次 (但最終平均的次數會少於 no_of_average)
-                # 2. 中斷整個過程並返回失敗 (更嚴謹的做法)
-                logging.error(f"在第 {i + 1}/{no_of_average} 次讀取光譜時失敗，中止平均過程。")
-                return None  # 採用嚴謹做法，直接返回 None
-
-        # 如果列表為空 (所有讀取都失敗了)
+        spectrums = [s for s in (self._read_single_raw_spectrum() for _ in range(no_average)) if s is not None]
         if not spectrums:
-            logging.error("沒有成功讀取到任何光譜數據。")
+            logging.error("No spectra were successfully acquired for averaging.")
             return None
 
-        # 將光譜列表轉換為 2D NumPy 陣列並計算平均值
-        # np.array(spectrums) 會產生一個 (no_of_average, 1280) 的陣列
-        # axis=0 會沿著第一個維度 (即沿著每一次的讀取) 計算平均值
         average_spectrum = np.mean(np.array(spectrums), axis=0)
-        # window_size = 79
-        # poly = 3
-        # average_spectrum =savgol_filter(average_spectrum, window_size, poly)
-
-        return average_spectrum
-
-    def read_spectrum_single_no_base(self,params):
-        raw_data = self.read_spectrum_single()
+        logging.debug(f"Successfully acquired and averaged {len(spectrums)} spectra..")
         wl = self.get_wavelength_axis()
-        wl = np.array(wl)
-        new_wl = np.arange(400, 1000.5, 0.5)
-        raw_data = np.array(raw_data)
-        # -------------------------
-
-        f = interp1d(wl,raw_data,kind='linear')
+        new_wl = np.arange(params.get('wavelength_start'), params.get('wavelength_end')+0.5, 0.5)
+        f = interp1d(wl, average_spectrum, kind='linear')
         new_data = f(new_wl)
-        s = pd.Series(new_data, index=new_wl)
-        baseline_start = params['baseline_start']
-        baseline_end = params['baseline_end']
-        mask = (s.index >= baseline_start) & (s.index <= baseline_end)
-        baseline_values = s[mask]
+        new_data_series = pd.Series(new_data, index=new_wl)
+        new_data_series.index.name = "Wavelength"
+        return new_data_series
+
+
+    def read_spectrum_single_no_base(self,raw_average_spectrum,config):
+        baseline_start = config['baseline_start']
+        baseline_end = config['baseline_end']
+        mask = (raw_average_spectrum.index >= baseline_start) & (raw_average_spectrum.index <= baseline_end)
+        baseline_values = raw_average_spectrum[mask]
         avg = baseline_values.mean()
-        s = s - avg
-        return s
+        average_spectrum_no_baseline = raw_average_spectrum - avg
+        return average_spectrum_no_baseline
 
