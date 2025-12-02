@@ -33,7 +33,7 @@ def load_and_validate_config(filepath):
                 logging.warning(f"無法解析此行，已跳過: {line}")
 
     # --- 參數驗證 ---
-    # swpd
+
     try:
         smpd = int(params['smpd'])
         if not (4 <= smpd <= 20):
@@ -114,10 +114,6 @@ def load_and_validate_config(filepath):
     params['lamp'] = lamp
 
 
-    # filepath
-    filepath_val = params.get('filepath')
-    if not filepath_val or not os.path.isdir(filepath_val):
-        raise ValueError(f"filepath 路徑無效或不存在: {filepath_val}")
 
     # distance_to_height
     try:

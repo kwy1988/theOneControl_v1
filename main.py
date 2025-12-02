@@ -44,31 +44,6 @@ def get_com_port():
             print("輸入格式錯誤，請確保 'COM' 為大寫且後面跟著數字。")
 
 
-def get_config_path():
-    """
-    提示使用者輸入設定檔的路徑。
-
-    Returns:
-        str: 設定檔的有效路徑。
-    """
-    # 获取当前 main.py 所在的绝对目录
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 拼接出 script.txt 的绝对路径
-    default_path = os.path.join(current_dir, 'script.txt')
-
-    while True:
-        # path = input("請輸入設定檔 (txt) 的完整路徑: ")
-        path = default_path
-        
-        if os.path.exists(path) and path.endswith('.txt'):
-            return path
-        else:
-            print(f"错误：在路径 '{path}' 找不到設定檔。")
-            # 如果自动寻找失败，允许用户手动输入，避免死循环
-            user_path = input("請手動輸入設定檔 (txt) 的完整路徑: ")
-            if os.path.exists(user_path) and user_path.endswith('.txt'):
-                return user_path
-            print("路徑無效或檔案不是 .txt 檔，請重新輸入。")
 
 
 def create_result_dataframe(params, intensity_data):
@@ -220,7 +195,7 @@ def main():
     try:
         # 1. 獲取使用者輸入
         com_port = get_com_port()
-        config_path = get_config_path()
+        config_path = 'script.txt'
 
         # 2. 載入並驗證設定
         logging.info(f"從 {config_path} 載入設定...")
