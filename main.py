@@ -87,7 +87,7 @@ def create_result_dataframe(params, intensity_data):
         'intensity': intensity_data
     })
 
-def perform_autoscaling(params,stage, spectrometer):
+def perform_autoscaling(params, stage, spectrometer):
     """
     自動調整光譜。
     """
@@ -123,14 +123,12 @@ def perform_autoscaling(params,stage, spectrometer):
     #3 autoscaling
     for i in range(20):
         logging.info(f"AutoScaling Iteration {i + 1}/20")
-        raw_spec = spectrometer.read_spectrum_single()
-        raw_spec = spectrometer.read_spectrum_single()
-        raw_spec = spectrometer.read_spectrum_single()
-        raw_spec = spectrometer.read_spectrum_single()
-        raw_spec = spectrometer.read_spectrum_single_no_base(params)
+        raw_spec = spectrometer.read_spectrum(params)
+        raw_spec = spectrometer.read_spectrum(params)
+        raw_spec = spectrometer.read_spectrum(params)
+        raw_spec = spectrometer.read_spectrum(params)
+        raw_spec = spectrometer.read_spectrum_single_no_base(raw_spec, params)
 
-        # wl = spectrometer.get_wavelength_axis()
-        # ias_index = np.abs(wl - autoscaling_wavelength).argmin()
         ias = raw_spec.loc[autoscaling_wavelength]
         logging.info(f"Exp={spectrometer.exp}, Gain={spectrometer.gain}. Intensity at ~{autoscaling_wavelength}nm is {ias:.2f} (Target: {autoscaling_intensity})")
 
@@ -166,9 +164,6 @@ def perform_autoscaling2(params, stage, spectrometer):
     autoscaling_threshold = params['autoscaling_threshold']
     autoscaling_position = params['autoscaling_position']
     pulse_distance = params['pulse_distance']
-    #4 turn off the light and move to ORI
-    # stage.send_command(f"$ORI#",15)
-    # stage.send_command(f"$MLS{int(autoscaling_position / pulse_distance)}#", 15)
 
     if params['number_of_autoscaling'] == 0:
         return
@@ -183,8 +178,6 @@ def perform_autoscaling2(params, stage, spectrometer):
                 logging.info(f"Average AutoScaling scan {j + 1}/{params['number_of_autoscaling']}")
                 stage.send_command(f"$MLS{params['no_of_pulse_per_point']}#")
                 raw_spec = spectrometer.read_spectrum_single_no_base(params)
-                # wl = spectrometer.get_wavelength_axis()
-                # ias_index = np.abs(wl - autoscaling_wavelength).argmin()
                 ias = raw_spec[autoscaling_wavelength]
                 logging.info(f"intensity is {ias}, at {j+1} point")
                 intensity_list.append(ias)
@@ -202,14 +195,10 @@ def perform_autoscaling2(params, stage, spectrometer):
                 spectrometer.set_exp(spectrometer.exp)
             # logging.info(f"the average intensity of autoscaling points is {avg_intensity}")
                 logging.info(f"the exp after this autoscaling is {spectrometer.exp} ms")
-            raw_spec = spectrometer.read_spectrum_single()
-            raw_spec = spectrometer.read_spectrum_single()
-            raw_spec = spectrometer.read_spectrum_single()
-            raw_spec = spectrometer.read_spectrum_single()
-
-
-
-
+            raw_spec = spectrometer.read_spectrum(params)
+            raw_spec = spectrometer.read_spectrum(params)
+            raw_spec = spectrometer.read_spectrum(params)
+            raw_spec = spectrometer.read_spectrum(params)
 
 
 def main():
@@ -239,12 +228,9 @@ def main():
         spectrometer = spectrometer_controller.SpectrometerController(gain=params['gain'], exp=params['exp'])
         logging.info("光譜儀初始化成功。")
 
-
         if params['autoscaling']==1:
             perform_autoscaling(params, stage, spectrometer)
             perform_autoscaling2(params, stage, spectrometer)
-
-
 
         params['exp_after_autoscaling']=spectrometer.exp
         # 4. 生成單一循環的指令列表
@@ -269,7 +255,6 @@ def main():
             spectral_data = np.zeros((1280, params['no_of_point_per_cycle']))
             srd_count = 0
 
-
             for i, command in enumerate(command_list):
                 logging.info(f"循環 {cycle_num} - 執行指令 {i + 1}/{len(command_list)}: {command}")
 
@@ -281,8 +266,8 @@ def main():
                     time.sleep(0.2)  # !危險的延遲，需要手動調整!
                     if srd_count < params['no_of_point_per_cycle']:
                         for _ in range(params['no_of_drop']):
-                            spectrometer.read_spectrum_single()
-                        spectrum = spectrometer.read_spectrum(params['no_of_average'])
+                            spectrometer.read_spectrum(params)
+                        spectrum = spectrometer.read_spectrum(params)
                         time.sleep(0.2)
                         if spectrum is not None:
                             spectral_data[:, srd_count] = spectrum
@@ -319,7 +304,7 @@ def main():
             sheet_name = f"total_data_{cycle_num}"
             if total_data_for_cycle is not None:
                 logging.info("正在將完整光譜數據轉換為 DataFrame...")
-                new_wavelengths = np.arange(400, 960.5, 0.5)
+                new_wavelengths = np.arange(params['wavelength_start'], params['wavelength_end']+0.5, 0.5)
                 point_headers = [f'Point_{i + 1}' for i in range(total_data_for_cycle.shape[1])]
                 headers = ['Wavelength'] + point_headers
                 data_to_write = np.hstack([new_wavelengths[:, np.newaxis], total_data_for_cycle])
